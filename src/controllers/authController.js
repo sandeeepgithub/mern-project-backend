@@ -3,6 +3,7 @@ const dotenv = require('dotenv');
 
 const User = require('../models/userModel');
 const AppError = require('../utils/appError');
+const sendEmail = require('../utils/email');
 
 dotenv.config({ path: './config.env' });
 
@@ -47,6 +48,9 @@ exports.signup = async (req, res, next) => {
   //   data: { newUser, token },
   // });
 
+  // Sending the verification link
+
+  res.locals = newUser;
   createJwtToken(newUser, 200, res);
 };
 
@@ -155,5 +159,44 @@ exports.updatePassword = async (req, res, next) => {
   res.status(200).json({
     status: 'success',
     data: currentUser,
+  });
+};
+
+exports.sendVerificationEmail = async (req, res) => {
+  const user = await User.findById({ _id: req.body.id });
+  console.log(user);
+  const token = jwtToken(req.body.id); // generate token for the user
+
+  const message = `Here is your activation link. Please click the link below to validate the user`; // send the token
+  const link = `http://127.0.0.1:8000/api/auth/verification/${token}`;
+
+  await sendEmail({
+    email: user.email,
+    subject: 'Account Validation',
+    message,
+    link,
+  });
+
+  res.status(200).json({
+    status: 'success',
+    data: {
+      message:
+        'Verification link is sent to your email. Please click the link to verify your account.',
+    },
+  });
+};
+
+exports.verifyUser = async (req, res, next) => {
+  const { token } = req.params; // recieve the token
+  const userId = await jwt.verify(token, process.env.JWT_SECRET_KEY); // compare with id
+
+  const user = await User.findByIdAndUpdate(
+    { _id: userId.id },
+    { isActive: true }
+  ); // make active if match is true
+
+  res.status(200).json({
+    status: 'success',
+    message: 'Validation successful. Please go back to your account page. ',
   });
 };

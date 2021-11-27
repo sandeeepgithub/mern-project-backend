@@ -3,6 +3,7 @@ const sharp = require('sharp');
 
 const User = require('../models/userModel');
 const AppError = require('../utils/appError');
+const sendEmail = require('../utils/email');
 
 // Multer configuration
 // store image in disk
@@ -60,7 +61,6 @@ exports.getAll = async (req, res, next) => {
 };
 
 exports.getOne = async (req, res, next) => {
-  console.log(req.user);
 
   const user = await User.findOne({ _id: req.user._id });
   if (!user)
@@ -96,9 +96,9 @@ exports.updateMe = async (req, res, next) => {
   });
 };
 
-exports.deleteUser = async (res, req, next) => {
+exports.deleteUser = async (req, res) => {
   const user = await User.findByIdAndUpdate(
-    { _id: res.body.id },
+    { _id: req.body.id },
     { isActive: false }
   );
 
@@ -107,3 +107,4 @@ exports.deleteUser = async (res, req, next) => {
     data: user,
   });
 };
+
